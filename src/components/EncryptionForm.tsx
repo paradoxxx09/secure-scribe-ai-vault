@@ -262,7 +262,7 @@ const EncryptionForm = () => {
                 <FileText className="h-4 w-4" />
                 <span>Text</span>
               </TabsTrigger>
-              <TabsTrigger value="file" className="flex items-center gap-2">
+              <TabsTrigger value="file" className="flex items-center gap-2" id="feature2">
                 <Lock className="h-4 w-4" />
                 <span>File</span>
               </TabsTrigger>
@@ -354,7 +354,9 @@ const EncryptionForm = () => {
         )}
         
         {/* AI Suggestion */}
-        <AiSuggestion analysis={aiAnalysis} />
+        <div id="feature3">
+          <AiSuggestion analysis={aiAnalysis} />
+        </div>
         
         {/* Action Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

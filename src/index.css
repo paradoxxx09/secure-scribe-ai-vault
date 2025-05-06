@@ -72,3 +72,64 @@
 .suggestion-gradient {
   @apply bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700;
 }
+
+/* Custom Intro.js Styles */
+.introjs-tooltip {
+  @apply bg-gray-900 text-white border border-blue-800 rounded-lg shadow-xl;
+}
+
+.introjs-tooltiptext {
+  @apply text-gray-200;
+}
+
+.introjs-tooltipbuttons {
+  @apply border-t border-blue-800;
+}
+
+.introjs-button {
+  @apply bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors border-0;
+}
+
+.introjs-disabled {
+  @apply bg-gray-700 text-gray-300 cursor-not-allowed hover:bg-gray-700;
+}
+
+.introjs-helperLayer {
+  @apply bg-blue-500/10 border border-blue-400/50;
+}
+
+.introjs-arrow.top {
+  @apply border-b-gray-900;
+}
+
+.introjs-arrow.bottom {
+  @apply border-t-gray-900;
+}
+
+.introjs-arrow.left {
+  @apply border-r-gray-900;
+}
+
+.introjs-arrow.right {
+  @apply border-l-gray-900;
+}
+
+.introjs-bullets ul li a {
+  @apply bg-gray-600;
+}
+
+.introjs-bullets ul li a.active {
+  @apply bg-blue-400;
+}
+
+.introjs-progress {
+  @apply bg-gray-700;
+}
+
+.introjs-progressbar {
+  @apply bg-blue-500;
+}
+
+.introjs-tooltip-title {
+  @apply text-blue-300 font-medium border-b border-blue-800 pb-2;
+}

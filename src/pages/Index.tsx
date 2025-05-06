@@ -2,25 +2,29 @@
 import React from 'react';
 import EncryptionForm from '@/components/EncryptionForm';
 import { Shield, LockKeyhole } from 'lucide-react';
+import TourButton from '@/components/TourButton';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
       {/* Header */}
       <header className="py-8 px-4 bg-gradient-to-r from-blue-900/60 to-cyan-900/60">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-blue-500 rounded-lg p-2">
-              <LockKeyhole className="h-8 w-8 text-white" />
+        <div className="max-w-5xl mx-auto flex justify-between items-center">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-blue-500 rounded-lg p-2">
+                <LockKeyhole className="h-8 w-8 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400">
+                SecureCrypt
+              </h1>
             </div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400">
-              SecureCrypt
-            </h1>
+            <p className="text-gray-300 max-w-2xl">
+              AES-powered encryption with intelligent content analysis. 
+              Secure your sensitive files and text with military-grade encryption.
+            </p>
           </div>
-          <p className="text-gray-300 max-w-2xl">
-            AES-powered encryption with intelligent content analysis. 
-            Secure your sensitive files and text with military-grade encryption.
-          </p>
+          <TourButton />
         </div>
       </header>
 
@@ -58,8 +62,14 @@ const Index = () => {
           </p>
         </div>
         
-        {/* Encryption Form Component */}
-        <EncryptionForm />
+        {/* Encryption Form Component with ID for feature1 */}
+        <div id="feature1" className="relative">
+          <EncryptionForm />
+        </div>
+        
+        {/* Add specific IDs for the other features */}
+        <div id="feature2" className="hidden md:block"></div> {/* File upload is inside EncryptionForm */}
+        <div id="feature3" className="hidden md:block"></div> {/* AI Analysis is inside EncryptionForm */}
         
         {/* Implementation Notes */}
         <div className="mt-12 p-4 bg-blue-950/30 border border-blue-900/50 rounded-lg">
