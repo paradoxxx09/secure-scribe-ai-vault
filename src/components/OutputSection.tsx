@@ -77,7 +77,10 @@ const OutputSection: React.FC<OutputSectionProps> = ({ result, className }) => {
         <CardTitle className="text-lg font-medium">
           {result.isEncrypted ? 'Encrypted Output' : 'Decrypted Output'}
         </CardTitle>
-        <Badge variant={result.isEncrypted ? 'default' : 'success'} className="flex items-center">
+        <Badge variant={result.isEncrypted ? "default" : "outline"} className={cn(
+          "flex items-center",
+          !result.isEncrypted && "bg-success/20 text-success hover:bg-success/30"
+        )}>
           {result.isEncrypted ? (
             <>
               <Lock className="h-3 w-3 mr-1" />
