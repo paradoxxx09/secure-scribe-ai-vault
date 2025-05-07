@@ -1,10 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import EncryptionForm from '@/components/EncryptionForm';
+import Dashboard from '@/components/Dashboard';
 import { Shield, LockKeyhole } from 'lucide-react';
 import TourButton from '@/components/TourButton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<string>('encrypt');
+  
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
       {/* Header */}
@@ -54,18 +58,37 @@ const Index = () => {
       
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-medium mb-2">Encrypt or Decrypt</h2>
-          <p className="text-gray-400">
-            Enter text or upload a file, add your password, and choose to encrypt or decrypt your data. 
-            Our AI will analyze content for sensitive information and recommend appropriate security measures.
-          </p>
-        </div>
-        
-        {/* Encryption Form Component with ID for feature1 */}
-        <div id="feature1" className="relative">
-          <EncryptionForm />
-        </div>
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+          <TabsList className="w-full max-w-md mx-auto grid grid-cols-2">
+            <TabsTrigger value="encrypt" className="flex items-center justify-center gap-2">
+              <Shield className="h-4 w-4" />
+              <span>Encrypt & Decrypt</span>
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center justify-center gap-2">
+              <LockKeyhole className="h-4 w-4" />
+              <span>Dashboard</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="encrypt" className="mt-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-medium mb-2">Encrypt or Decrypt</h2>
+              <p className="text-gray-400">
+                Enter text or upload a file, add your password, and choose to encrypt or decrypt your data. 
+                Our AI will analyze content for sensitive information and recommend appropriate security measures.
+              </p>
+            </div>
+            
+            {/* Encryption Form Component with ID for feature1 */}
+            <div id="feature1" className="relative">
+              <EncryptionForm />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="dashboard" className="mt-6">
+            <Dashboard />
+          </TabsContent>
+        </Tabs>
         
         {/* Add specific IDs for the other features */}
         <div id="feature2" className="hidden md:block"></div> {/* File upload is inside EncryptionForm */}
@@ -73,15 +96,16 @@ const Index = () => {
         
         {/* Implementation Notes */}
         <div className="mt-12 p-4 bg-blue-950/30 border border-blue-900/50 rounded-lg">
-          <h3 className="font-medium text-blue-400 mb-2">Developer Notes</h3>
+          <h3 className="font-medium text-blue-400 mb-2">Security Information</h3>
           <p className="text-sm text-gray-400 mb-2">
-            This is a simulation of an encryption application. In a production application:
+            SecureCrypt uses real AES-256 encryption with the following security features:
           </p>
           <ul className="text-sm text-gray-400 list-disc list-inside space-y-1">
-            <li>Real cryptographic libraries would be used instead of the simulation</li>
-            <li>The Python backend would handle actual encryption/decryption using libraries like cryptography or pycryptodome</li>
-            <li>A more sophisticated AI model could be implemented for content analysis</li>
-            <li>Secure key management practices would be implemented</li>
+            <li>AES-256 encryption with CBC mode and PKCS#7 padding</li>
+            <li>PBKDF2 key derivation with configurable iterations (min 100,000)</li>
+            <li>Unique salt and initialization vector (IV) for each encryption</li>
+            <li>Zero-knowledge, client-side encryption - your data never leaves your device</li>
+            <li>AI-powered content analysis to detect sensitive information</li>
           </ul>
         </div>
       </main>
@@ -90,7 +114,7 @@ const Index = () => {
       <footer className="py-6 px-4 border-t border-gray-800">
         <div className="max-w-5xl mx-auto text-center text-sm text-gray-500">
           <p>SecureCrypt — Secure file & text encryption with intelligent content analysis.</p>
-          <p className="mt-2">This is a demo application for educational purposes.</p>
+          <p className="mt-2">Using industry-standard AES-256 encryption with zero-knowledge principles.</p>
         </div>
       </footer>
     </div>

@@ -1,6 +1,6 @@
 
-// This is a simulation of encryption/decryption functionality
-// In a real implementation, this would use actual cryptographic libraries
+// Real implementation of encryption/decryption functionality using crypto-js
+import CryptoJS from 'crypto-js';
 
 // Interface for encrypted data structure
 export interface EncryptedData {
@@ -15,21 +15,35 @@ export interface EncryptionOptions {
   keyLength?: number; // Key length in bits
 }
 
-// Simulation of encryption process
+// Global encryption stats for dashboard
+export const encryptionStats = {
+  filesEncrypted: 0,
+  textEncrypted: 0,
+  sensitiveContentDetected: 0,
+  totalOperations: 0,
+  categoryCount: {
+    financial: 0,
+    identity: 0,
+    personal: 0,
+    professional: 0
+  }
+};
+
+// Real implementation of encryption process
 export const encrypt = (
   content: string | ArrayBuffer,
   password: string,
   options: EncryptionOptions = {}
 ): EncryptedData => {
-  // In a real implementation, this would:
-  // 1. Generate a random salt
-  // 2. Use PBKDF2 to derive a key from the password
-  // 3. Generate a random IV (initialization vector)
-  // 4. Use AES-GCM to encrypt the content
-  // 5. Return the encrypted data, IV, and salt
+  // Get options with defaults
+  const iterations = options.iterations || 150000;
+  const keySize = (options.keyLength || 256) / 32; // Convert bits to words (32 bits per word)
+
+  // Generate a random salt
+  const salt = CryptoJS.lib.WordArray.random(128 / 8).toString(CryptoJS.enc.Hex);
   
-  const salt = generateRandomString(16);
-  const iv = generateRandomString(12);
+  // Generate a random IV (initialization vector)
+  const iv = CryptoJS.lib.WordArray.random(128 / 8).toString(CryptoJS.enc.Hex);
   
   // Convert content to string if it's ArrayBuffer
   let contentStr = '';
@@ -40,80 +54,78 @@ export const encrypt = (
     contentStr = content;
   }
   
-  // Simulate encryption (this is NOT real encryption)
-  // In a production app, use a proper crypto library
-  const simpleEncodedContent = btoa(contentStr);
-  const encryptedContent = `${simpleEncodedContent}_${password.length}_${salt}_${iv}`;
-  
-  // Log for demonstration
-  console.log("Encrypt called with:", { 
-    contentLength: contentStr.length,
-    passwordLength: password.length,
-    options
+  // Derive key using PBKDF2 (Password-Based Key Derivation Function 2)
+  const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
+    keySize: keySize,
+    iterations: iterations
   });
   
+  // Encrypt the content using AES
+  const encrypted = CryptoJS.AES.encrypt(contentStr, key.toString(), {
+    iv: CryptoJS.enc.Hex.parse(iv),
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7
+  });
+  
+  // Update stats
+  encryptionStats.totalOperations++;
+  if (content instanceof ArrayBuffer) {
+    encryptionStats.filesEncrypted++;
+  } else {
+    encryptionStats.textEncrypted++;
+  }
+  
+  // Return encrypted data with salt and IV
   return {
-    encryptedContent,
-    iv,
-    salt
+    encryptedContent: encrypted.toString(),
+    iv: iv,
+    salt: salt
   };
 };
 
-// Simulation of decryption process
+// Real implementation of decryption process
 export const decrypt = (
   encryptedData: EncryptedData,
   password: string,
   options: EncryptionOptions = {}
 ): string => {
-  // In a real implementation, this would:
-  // 1. Use PBKDF2 with the provided salt to derive the key
-  // 2. Use AES-GCM with the provided IV to decrypt the content
-  // 3. Return the decrypted content
-  
   try {
-    // Simulate decryption validation (this is NOT real decryption)
-    const parts = encryptedData.encryptedContent.split('_');
-    if (parts.length !== 4) {
-      throw new Error("Invalid encrypted data format");
-    }
+    // Get options with defaults
+    const iterations = options.iterations || 150000;
+    const keySize = (options.keyLength || 256) / 32; // Convert bits to words
     
-    const encodedContent = parts[0];
-    const passwordLength = parseInt(parts[1]);
-    
-    // Simple password validation (simulating wrong password)
-    if (password.length !== passwordLength) {
-      throw new Error("Incorrect password");
-    }
-    
-    // Decode the content
-    const decodedContent = atob(encodedContent);
-    
-    // Log for demonstration
-    console.log("Decrypt called with:", { 
-      encryptedDataLength: encryptedData.encryptedContent.length,
-      passwordLength: password.length,
-      options
+    // Derive the same key using PBKDF2 with the provided salt
+    const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(encryptedData.salt), {
+      keySize: keySize,
+      iterations: iterations
     });
     
-    return decodedContent;
+    // Decrypt the content
+    const decrypted = CryptoJS.AES.decrypt(encryptedData.encryptedContent, key.toString(), {
+      iv: CryptoJS.enc.Hex.parse(encryptedData.iv),
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+    
+    // Convert to UTF8 string
+    const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+    
+    // If decryption produced an empty string, the password was likely incorrect
+    if (!decryptedText) {
+      throw new Error("Incorrect password");
+    }
+    
+    // Update stats
+    encryptionStats.totalOperations++;
+    
+    return decryptedText;
   } catch (error) {
-    if ((error as Error).message === "Incorrect password") {
+    if (error instanceof Error && error.message === "Incorrect password") {
       throw new Error("Incorrect password");
     } else {
-      throw new Error("Failed to decrypt: Invalid data format");
+      throw new Error("Failed to decrypt: Invalid data format or incorrect password");
     }
   }
-};
-
-// Helper function to simulate generating random strings (for salt, IV)
-const generateRandomString = (length: number): string => {
-  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    result += charset[randomIndex];
-  }
-  return result;
 };
 
 // Function to convert file to base64
@@ -166,4 +178,65 @@ export const base64ToBlob = (base64: string, mimeType: string): Blob => {
 export const createDownloadUrl = (content: string, filename: string, mimeType: string = 'text/plain'): string => {
   const blob = new Blob([content], { type: mimeType });
   return URL.createObjectURL(blob);
+};
+
+// Password strength evaluation
+export interface PasswordStrength {
+  score: number; // 0-4 (0: very weak, 4: very strong)
+  feedback: string;
+  color: string;
+}
+
+export const evaluatePasswordStrength = (password: string): PasswordStrength => {
+  if (!password) {
+    return { score: 0, feedback: "Enter a password", color: "bg-gray-300" };
+  }
+  
+  let score = 0;
+  let feedback = "";
+  let color = "";
+  
+  // Length check
+  if (password.length < 8) {
+    feedback = "Password is too short";
+    color = "bg-red-500";
+    return { score, feedback, color };
+  } else if (password.length >= 16) {
+    score += 2;
+  } else if (password.length >= 12) {
+    score += 1;
+  }
+  
+  // Character variety checks
+  if (/[A-Z]/.test(password)) score += 0.5;
+  if (/[a-z]/.test(password)) score += 0.5;
+  if (/[0-9]/.test(password)) score += 0.5;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+  
+  // Combination complexity
+  if (/[A-Z].*[0-9]|[0-9].*[A-Z]/.test(password)) score += 0.5;
+  if (/[a-z].*[0-9]|[0-9].*[a-z]/.test(password)) score += 0.5;
+  if (/[A-Z].*[^A-Za-z0-9]|[^A-Za-z0-9].*[A-Z]/.test(password)) score += 0.5;
+  if (/[a-z].*[^A-Za-z0-9]|[^A-Za-z0-9].*[a-z]/.test(password)) score += 0.5;
+
+  // Determine feedback and color based on score
+  if (score >= 4) {
+    feedback = "Very strong password";
+    color = "bg-green-500";
+  } else if (score >= 3) {
+    feedback = "Strong password";
+    color = "bg-green-400";
+  } else if (score >= 2) {
+    feedback = "Medium strength password";
+    color = "bg-yellow-500";
+  } else {
+    feedback = "Weak password";
+    color = "bg-red-400";
+  }
+  
+  return {
+    score: Math.min(4, Math.floor(score)),
+    feedback,
+    color
+  };
 };

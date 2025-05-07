@@ -18,7 +18,8 @@ import {
   encrypt, 
   decrypt, 
   EncryptedData,
-  fileToBase64
+  fileToBase64,
+  evaluatePasswordStrength
 } from '@/utils/encryptionUtils';
 import { analyzeContent, analyzeFilename, AiAnalysisResult } from '@/utils/aiAnalyzer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -57,6 +58,9 @@ const EncryptionForm = () => {
   
   // AI suggestion state
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null);
+  
+  // Calculate password strength
+  const passwordStrength = evaluatePasswordStrength(password);
   
   // Handle file selection
   const handleFileSelect = async (selectedFile: File) => {
@@ -281,6 +285,22 @@ const EncryptionForm = () => {
   
   return (
     <div className="w-full max-w-4xl mx-auto">
+      {/* Zero-Knowledge Encryption Badge */}
+      <div className="mb-6 flex justify-center">
+        <div className="bg-emerald-900/20 text-emerald-400 border border-emerald-500/30 rounded-lg px-4 py-2 inline-flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          <span className="font-medium">✅ 100% Client-Side Encryption (Zero Knowledge)</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info size={14} className="text-emerald-400/70 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[300px] text-xs">
+              Your data never leaves your browser. All encryption and decryption happens locally on your device.
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Input Section */}
         <div className="space-y-4">
@@ -319,22 +339,40 @@ const EncryptionForm = () => {
           </Tabs>
         </div>
         
-        {/* Password Input */}
-        <div className="relative">
-          <Input
-            type={showPassword ? "text" : "password"}
-            placeholder="Enter encryption password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="pr-10"
-          />
-          <button 
-            type="button" 
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
+        {/* Password Input with Strength Meter */}
+        <div className="space-y-2">
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter encryption password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-10"
+            />
+            <button 
+              type="button" 
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          
+          {/* Password strength meter */}
+          {password && (
+            <div className="space-y-2">
+              <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                {[...Array(5)].map((_, i) => (
+                  <div 
+                    key={i}
+                    className={`h-1.5 ${i < passwordStrength.score ? passwordStrength.color : 'bg-transparent'} inline-block`}
+                    style={{ width: '20%' }}
+                  ></div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400">{passwordStrength.feedback}</p>
+            </div>
+          )}
         </div>
         
         {/* Advanced Options */}
