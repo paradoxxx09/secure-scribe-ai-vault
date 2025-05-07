@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   Lock, Unlock, Shield, FileText, 
-  AlertCircle, Eye, EyeOff, Wand2
+  AlertCircle, Eye, EyeOff, Wand2, Info
 } from 'lucide-react';
 import FileUpload from './FileUpload';
 import AiSuggestion from './AiSuggestion';
@@ -21,6 +21,16 @@ import {
   fileToBase64
 } from '@/utils/encryptionUtils';
 import { analyzeContent, analyzeFilename, AiAnalysisResult } from '@/utils/aiAnalyzer';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import EncryptionInfoModal from './EncryptionInfoModal';
 
 const EncryptionForm = () => {
   const { toast } = useToast();
@@ -31,9 +41,10 @@ const EncryptionForm = () => {
   const [password, setPassword] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isAdvanced, setIsAdvanced] = useState<boolean>(false);
-  const [iterations, setIterations] = useState<number>(10000);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
+  const [iterations, setIterations] = useState<number>(150000);
   const [keyLength, setKeyLength] = useState<number>(256);
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   
   // Processing states
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -74,6 +85,13 @@ const EncryptionForm = () => {
       setAiAnalysis(null);
     }
   };
+
+  // Handle iterations input change with validation
+  const handleIterationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    // Enforce minimum value on UI
+    setIterations(isNaN(value) ? 150000 : Math.max(100000, value));
+  };
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +122,16 @@ const EncryptionForm = () => {
         description: "Please select a file to encrypt or decrypt.",
       });
       return;
+    }
+
+    // Server-side-like validation - enforce minimum iterations
+    const safeIterations = Math.max(100000, iterations);
+    if (safeIterations !== iterations) {
+      toast({
+        title: "Security notice",
+        description: "Iteration count adjusted to meet minimum security requirements.",
+      });
+      setIterations(safeIterations);
     }
     
     setIsProcessing(true);
@@ -310,48 +338,86 @@ const EncryptionForm = () => {
         </div>
         
         {/* Advanced Options */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="advanced-mode"
-            checked={isAdvanced}
-            onCheckedChange={setIsAdvanced}
-          />
-          <Label htmlFor="advanced-mode">Advanced options</Label>
-        </div>
-        
-        {isAdvanced && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="iterations">PBKDF2 Iterations</Label>
-              <Input
-                id="iterations"
-                type="number"
-                min="1000"
-                max="100000"
-                step="1000"
-                value={iterations}
-                onChange={(e) => setIterations(Number(e.target.value))}
+        <div className="space-y-3 border border-blue-900/30 rounded-lg p-4 bg-blue-950/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="advanced-mode"
+                checked={isAdvancedOpen}
+                onCheckedChange={setIsAdvancedOpen}
               />
-              <p className="text-xs text-gray-400">
-                Higher values increase security but slow down encryption/decryption
-              </p>
+              <Label htmlFor="advanced-mode" className="font-medium">Advanced Encryption Options</Label>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="key-length">Key Length (bits)</Label>
-              <select
-                id="key-length"
-                value={keyLength}
-                onChange={(e) => setKeyLength(Number(e.target.value))}
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
-              >
-                <option value={128}>128 bits</option>
-                <option value={192}>192 bits</option>
-                <option value={256}>256 bits</option>
-              </select>
-            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0" 
+              type="button"
+              onClick={() => setShowInfoModal(true)}
+            >
+              <Info size={16} className="text-blue-400" />
+            </Button>
           </div>
-        )}
+          
+          <Collapsible open={isAdvancedOpen} className="space-y-4">
+            <CollapsibleContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="iterations" className="text-sm">PBKDF2 Iterations</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info size={14} className="text-blue-400/70 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[300px] text-xs">
+                        The number of times your password is processed to generate a secure key. 
+                        Higher values make it harder for attackers to guess your password, but may slow down encryption/decryption.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="iterations"
+                    type="number"
+                    min="100000"
+                    step="10000"
+                    value={iterations}
+                    onChange={handleIterationsChange}
+                  />
+                  <p className="text-xs text-gray-400">
+                    Minimum: 100,000 (higher values increase security)
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="key-length" className="text-sm">Key Length (bits)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info size={14} className="text-blue-400/70 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[300px] text-xs">
+                        The size of the encryption key. 256-bit is standard for strong AES encryption.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select value={keyLength.toString()} onValueChange={(value) => setKeyLength(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select key length" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="128">128 bits</SelectItem>
+                      <SelectItem value="192">192 bits</SelectItem>
+                      <SelectItem value="256">256 bits</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-400">
+                    256-bit provides the strongest encryption
+                  </p>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
         
         {/* AI Suggestion */}
         <div id="feature3">
@@ -405,6 +471,9 @@ const EncryptionForm = () => {
       {outputResult && (
         <OutputSection result={outputResult} className="mt-6" />
       )}
+      
+      {/* Info Modal */}
+      <EncryptionInfoModal open={showInfoModal} onClose={() => setShowInfoModal(false)} />
     </div>
   );
 };
