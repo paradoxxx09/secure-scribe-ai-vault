@@ -1,36 +1,18 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { 
-  Lock, Unlock, Shield, FileText, 
-  AlertCircle, Eye, EyeOff, Wand2, Info
-} from 'lucide-react';
-import FileUpload from './FileUpload';
+import { evaluatePasswordStrength } from '@/utils/encryptionUtils';
+import { analyzeContent, analyzeFilename } from '@/utils/aiAnalyzer';
+import { encrypt, decrypt, EncryptedData, fileToBase64 } from '@/utils/encryptionUtils';
+
+// Import refactored components
+import InputSection from './encryption/InputSection';
+import PasswordInput from './encryption/PasswordInput';
+import AdvancedOptions from './encryption/AdvancedOptions';
+import ActionButtons from './encryption/ActionButtons';
+import ZeroKnowledgeBadge from './encryption/ZeroKnowledgeBadge';
 import AiSuggestion from './AiSuggestion';
 import OutputSection from './OutputSection';
-import { 
-  encrypt, 
-  decrypt, 
-  EncryptedData,
-  fileToBase64,
-  evaluatePasswordStrength
-} from '@/utils/encryptionUtils';
-import { analyzeContent, analyzeFilename, AiAnalysisResult } from '@/utils/aiAnalyzer';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import EncryptionInfoModal from './EncryptionInfoModal';
 
 const EncryptionForm = () => {
@@ -41,11 +23,11 @@ const EncryptionForm = () => {
   const [inputText, setInputText] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
+  
+  // Advanced options state
   const [iterations, setIterations] = useState<number>(150000);
   const [keyLength, setKeyLength] = useState<number>(256);
-  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   
   // Processing states
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -57,7 +39,7 @@ const EncryptionForm = () => {
   } | null>(null);
   
   // AI suggestion state
-  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysisResult | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   
   // Calculate password strength
   const passwordStrength = evaluatePasswordStrength(password);
@@ -88,13 +70,6 @@ const EncryptionForm = () => {
     } else if (text.length === 0) {
       setAiAnalysis(null);
     }
-  };
-
-  // Handle iterations input change with validation
-  const handleIterationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    // Enforce minimum value on UI
-    setIterations(isNaN(value) ? 150000 : Math.max(100000, value));
   };
   
   // Handle form submission
@@ -242,8 +217,6 @@ const EncryptionForm = () => {
       }
     } else if (file) {
       // File decryption is not fully implemented in this demo
-      // In a real app, we would read the file, parse its JSON content,
-      // decrypt it, and offer the original file for download
       toast({
         variant: "destructive",
         title: "Feature not implemented",
@@ -286,176 +259,35 @@ const EncryptionForm = () => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Zero-Knowledge Encryption Badge */}
-      <div className="mb-6 flex justify-center">
-        <div className="bg-emerald-900/20 text-emerald-400 border border-emerald-500/30 rounded-lg px-4 py-2 inline-flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          <span className="font-medium">✅ 100% Client-Side Encryption (Zero Knowledge)</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info size={14} className="text-emerald-400/70 cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[300px] text-xs">
-              Your data never leaves your browser. All encryption and decryption happens locally on your device.
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
+      <ZeroKnowledgeBadge />
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Input Section */}
-        <div className="space-y-4">
-          <Tabs defaultValue={inputTab} onValueChange={setInputTab} className="w-full">
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="text" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span>Text</span>
-              </TabsTrigger>
-              <TabsTrigger value="file" className="flex items-center gap-2" id="feature2">
-                <Lock className="h-4 w-4" />
-                <span>File</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="text" className="space-y-4 p-1">
-              <Textarea 
-                placeholder="Enter text to encrypt or paste encrypted content to decrypt..."
-                value={inputText}
-                onChange={handleTextChange}
-                className="min-h-[200px] font-mono text-sm"
-              />
-            </TabsContent>
-            
-            <TabsContent value="file" className="space-y-4 p-1">
-              <FileUpload onFileSelect={handleFileSelect} />
-              {file && (
-                <div className="p-3 bg-secondary/30 rounded-md">
-                  <p className="text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+        <InputSection 
+          inputTab={inputTab}
+          setInputTab={setInputTab}
+          inputText={inputText}
+          setInputText={setInputText}
+          handleTextChange={handleTextChange}
+          file={file}
+          handleFileSelect={handleFileSelect}
+        />
         
         {/* Password Input with Strength Meter */}
-        <div className="space-y-2">
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter encryption password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pr-10"
-            />
-            <button 
-              type="button" 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          
-          {/* Password strength meter */}
-          {password && (
-            <div className="space-y-2">
-              <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
-                {[...Array(5)].map((_, i) => (
-                  <div 
-                    key={i}
-                    className={`h-1.5 ${i < passwordStrength.score ? passwordStrength.color : 'bg-transparent'} inline-block`}
-                    style={{ width: '20%' }}
-                  ></div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400">{passwordStrength.feedback}</p>
-            </div>
-          )}
-        </div>
+        <PasswordInput 
+          password={password}
+          setPassword={setPassword}
+          passwordStrength={passwordStrength}
+        />
         
         {/* Advanced Options */}
-        <div className="space-y-3 border border-blue-900/30 rounded-lg p-4 bg-blue-950/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="advanced-mode"
-                checked={isAdvancedOpen}
-                onCheckedChange={setIsAdvancedOpen}
-              />
-              <Label htmlFor="advanced-mode" className="font-medium">Advanced Encryption Options</Label>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0" 
-              type="button"
-              onClick={() => setShowInfoModal(true)}
-            >
-              <Info size={16} className="text-blue-400" />
-            </Button>
-          </div>
-          
-          <Collapsible open={isAdvancedOpen} className="space-y-4">
-            <CollapsibleContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="iterations" className="text-sm">PBKDF2 Iterations</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info size={14} className="text-blue-400/70 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[300px] text-xs">
-                        The number of times your password is processed to generate a secure key. 
-                        Higher values make it harder for attackers to guess your password, but may slow down encryption/decryption.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Input
-                    id="iterations"
-                    type="number"
-                    min="100000"
-                    step="10000"
-                    value={iterations}
-                    onChange={handleIterationsChange}
-                  />
-                  <p className="text-xs text-gray-400">
-                    Minimum: 100,000 (higher values increase security)
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="key-length" className="text-sm">Key Length (bits)</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info size={14} className="text-blue-400/70 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[300px] text-xs">
-                        The size of the encryption key. 256-bit is standard for strong AES encryption.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Select value={keyLength.toString()} onValueChange={(value) => setKeyLength(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select key length" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="128">128 bits</SelectItem>
-                      <SelectItem value="192">192 bits</SelectItem>
-                      <SelectItem value="256">256 bits</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-400">
-                    256-bit provides the strongest encryption
-                  </p>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
+        <AdvancedOptions 
+          iterations={iterations}
+          setIterations={setIterations}
+          keyLength={keyLength}
+          setKeyLength={setKeyLength}
+          setShowInfoModal={setShowInfoModal}
+        />
         
         {/* AI Suggestion */}
         <div id="feature3">
@@ -463,46 +295,12 @@ const EncryptionForm = () => {
         </div>
         
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="suggestion-gradient text-white"
-            onClick={handleGetAiSuggestion}
-            disabled={isProcessing}
-          >
-            <Wand2 className="h-4 w-4 mr-2" />
-            AI Suggestion
-          </Button>
-          
-          <Button
-            type="submit"
-            className="encrypt-gradient text-white"
-            onClick={() => setMode('encrypt')}
-            disabled={isProcessing}
-          >
-            {isProcessing && mode === 'encrypt' ? (
-              <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
-              <Lock className="h-4 w-4 mr-2" />
-            )}
-            Encrypt
-          </Button>
-          
-          <Button
-            type="submit"
-            className="decrypt-gradient text-white"
-            onClick={() => setMode('decrypt')}
-            disabled={isProcessing}
-          >
-            {isProcessing && mode === 'decrypt' ? (
-              <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
-              <Unlock className="h-4 w-4 mr-2" />
-            )}
-            Decrypt
-          </Button>
-        </div>
+        <ActionButtons 
+          isProcessing={isProcessing}
+          mode={mode}
+          setMode={setMode}
+          handleGetAiSuggestion={handleGetAiSuggestion}
+        />
       </form>
       
       {/* Output Section */}
