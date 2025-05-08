@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -224,9 +223,11 @@ const Auth = () => {
                         <Input
                           placeholder="Your Name"
                           className="pl-10"
-                          {...field}
-                          value={field.value}
-                          onChange={(e) => field.onChange(e.target.value)}
+                          onChange={field.onChange}
+                          name={field.name}
+                          value={field.value || ''}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         />
                       </div>
                     </FormControl>
