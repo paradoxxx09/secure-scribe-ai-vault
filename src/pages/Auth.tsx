@@ -225,6 +225,8 @@ const Auth = () => {
                           placeholder="Your Name"
                           className="pl-10"
                           {...field}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
                         />
                       </div>
                     </FormControl>
