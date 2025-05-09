@@ -4,8 +4,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { evaluatePasswordStrength } from '@/utils/encryptionUtils';
 import { analyzeContent, analyzeFilename } from '@/utils/aiAnalyzer';
 import { encrypt, decrypt, EncryptedData, fileToBase64 } from '@/utils/encryptionUtils';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 // Import refactored components
 import InputSection from './encryption/InputSection';
@@ -19,7 +17,6 @@ import EncryptionInfoModal from './EncryptionInfoModal';
 
 const EncryptionForm = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
   
   // Form states
   const [inputTab, setInputTab] = useState<string>('text');
@@ -46,28 +43,6 @@ const EncryptionForm = () => {
   
   // Calculate password strength
   const passwordStrength = evaluatePasswordStrength(password);
-  
-  // Track encryption/decryption in Supabase
-  const trackOperation = async (operation: {
-    contentType: string;
-    fileName?: string;
-    isEncrypted: boolean;
-    metadata?: any;
-  }) => {
-    if (!user) return;
-    
-    try {
-      await supabase.from('encryption_history').insert({
-        user_id: user.id,
-        content_type: operation.contentType,
-        file_name: operation.fileName,
-        is_encrypted: operation.isEncrypted,
-        metadata: operation.metadata
-      });
-    } catch (error) {
-      console.error('Failed to track encryption operation:', error);
-    }
-  };
   
   // Handle file selection
   const handleFileSelect = async (selectedFile: File) => {
@@ -171,17 +146,6 @@ const EncryptionForm = () => {
         isEncrypted: true
       });
       
-      // Track the encryption operation
-      await trackOperation({
-        contentType: 'text',
-        isEncrypted: true,
-        metadata: { 
-          size: inputText.length,
-          strength: passwordStrength.score,
-          aiRecommended: aiAnalysis?.shouldEncrypt || false
-        }
-      });
-      
       toast({
         title: "Encryption successful",
         description: "Your text has been encrypted."
@@ -209,19 +173,6 @@ const EncryptionForm = () => {
           filename: `${file.name}.encrypted`
         });
         
-        // Track the encryption operation
-        await trackOperation({
-          contentType: 'file',
-          fileName: file.name,
-          isEncrypted: true,
-          metadata: {
-            fileType: file.type,
-            size: file.size,
-            strength: passwordStrength.score,
-            aiRecommended: aiAnalysis?.shouldEncrypt || false
-          }
-        });
-        
         toast({
           title: "Encryption successful",
           description: `${file.name} has been encrypted.`
@@ -247,16 +198,6 @@ const EncryptionForm = () => {
         setOutputResult({
           content: decryptedContent,
           isEncrypted: false
-        });
-        
-        // Track the decryption operation
-        await trackOperation({
-          contentType: 'text',
-          isEncrypted: false,
-          metadata: { 
-            size: decryptedContent.length,
-            strength: passwordStrength.score
-          }
         });
         
         // Run AI analysis on the decrypted content

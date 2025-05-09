@@ -5,7 +5,6 @@ import Dashboard from '@/components/Dashboard';
 import { Shield, LockKeyhole } from 'lucide-react';
 import TourButton from '@/components/TourButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import UserProfile from '@/components/UserProfile';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<string>('encrypt');
@@ -29,10 +28,7 @@ const Index = () => {
               Secure your sensitive files and text with military-grade encryption.
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <TourButton />
-            <UserProfile />
-          </div>
+          <TourButton />
         </div>
       </header>
 
